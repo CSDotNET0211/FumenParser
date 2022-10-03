@@ -62,8 +62,8 @@ namespace Fumen
                 {
                     byte[] encodedBytes = encoder.GetBytes(str[i].ToString());
                     result += "%u";
-                    result += string.Format("{0:x2}", encodedBytes[0]);
-                    result += string.Format("{0:x2}", encodedBytes[1]);
+                    result += string.Format("{0:X2}", encodedBytes[0]);
+                    result += string.Format("{0:X2}", encodedBytes[1]);
                 }
             }
 

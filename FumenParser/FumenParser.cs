@@ -293,6 +293,7 @@ namespace Fumen
 
             }
 
+            // Console.WriteLine(unicodeComment);
             return ConvertUnicode(unicodeComment);
         }
         /// <summary>
@@ -372,6 +373,7 @@ namespace Fumen
             string resultStr = string.Empty;
 
             string unicodeLetters = str.ConvertLetters2Unicode();
+            //  Console.WriteLine(unicodeLetters);
             int letterCount = 0;
             string commentData = string.Empty;
 
