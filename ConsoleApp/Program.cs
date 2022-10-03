@@ -5,6 +5,10 @@ var url = "";
 
 while (true)
 {
+    var test=0;
+    //Console.WriteLine(FumenParser.DecodeComment("DAFLrAA", ref test));
+
+
     Console.WriteLine("input");
     url = Console.ReadLine();
 

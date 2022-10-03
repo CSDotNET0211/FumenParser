@@ -1,5 +1,5 @@
 ﻿
-using Microsoft.VisualBasic;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Fumen
 {
@@ -28,7 +28,7 @@ namespace Fumen
 
         public static int FIELD_HEIGHT { get; private set; } = 24;
         public const int FIELD_WIDTH = 10;
-     static   public int FIELD_SIZE
+        static public int FIELD_SIZE
         {
             get { return FIELD_WIDTH * FIELD_HEIGHT; }
         }
@@ -329,7 +329,7 @@ namespace Fumen
                 {
                     unicodeBuff.Add(str[i]);
 
-                    if (unicodeBuff.Count == 6)
+                    if (unicodeBuff.Count == 6 || (unicodeBuff.Count == 3 && unicodeBuff[1] != 'u'))
                     {
                         result += unicodeBuff.ConvertUnicode2Letter();
                         unicodeBuff.Clear();
@@ -405,8 +405,6 @@ namespace Fumen
                     if (i == unicodeLetters.Length)
                         break;
 
-
-
                     unicodeIntger += ((unicodeLetters[i] - 32) * commentTablePow);
                     commentTablePow *= 96;
                     letterCount++;
@@ -435,6 +433,11 @@ namespace Fumen
 
             return resultStr;
 
+        }
+
+        public static string Test(string str)
+        {
+            return str.ConvertLetters2Unicode();
         }
     }
 }
