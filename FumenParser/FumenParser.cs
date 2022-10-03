@@ -32,6 +32,7 @@ namespace Fumen
         {
             get { return FIELD_WIDTH * FIELD_HEIGHT; }
         }
+        static string vhValue;
 
         /// <summary>
         /// 渡されたURLパラメータを譜面データに変換
@@ -57,9 +58,15 @@ namespace Fumen
             int vhCount = 0;
 
             if (fumenData.Version == "115")
+            {
                 FIELD_HEIGHT = 24;
+                vhValue="vh";
+            }
             else if (fumenData.Version == "110")
+            {
                 FIELD_HEIGHT = 22;
+                vhValue="7e";
+            }
             else
                 throw new Exception("不明なバージョン");
 
@@ -101,7 +108,7 @@ namespace Fumen
                     var tempdata_str = urlParam.Substring(urlOffset, 2);
                     urlOffset += 2;
 
-                    if (tempdata_str == "vh")
+                    if (tempdata_str == vhValue)
                     {
                         vhCount = Poll(1, urlParam.Substring(urlOffset, 1));
                         urlOffset += 1;
@@ -151,10 +158,17 @@ namespace Fumen
         /// <returns></returns>
         static public string Encode(FumenData fumenData)
         {
+            // TODO: vhValueはいつかその場で計算させる
             if (fumenData.Version == "115")
+            {
                 FIELD_HEIGHT = 24;
+                vhValue="vh";
+            }
             else if (fumenData.Version == "110")
+            {
                 FIELD_HEIGHT = 22;
+                vhValue = "7e";
+            }
             else
                 throw new Exception("不明なバージョン");
 
@@ -221,7 +235,7 @@ namespace Fumen
                             var encodedData = PollRevert(2, (currentPage.Field[x + y * 10 - 1] + 8) * FIELD_SIZE + (blockCount - 1));
                             resultStr += encodedData;
 
-                            if (encodedData == "vh")
+                            if (encodedData == vhValue)
                             {
                                 while (true)
                                 {

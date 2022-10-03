@@ -83,7 +83,7 @@ namespace Fumen
                     result += "%";
                     result += string.Format("{0:X2}", encodedBytes[1]);
                 }
-                else if (str[i] <= 1)//Unicode:6
+                else if (str[i] > 127)//Unicode:6
                 {
                     byte[] encodedBytes = encoder.GetBytes(str[i].ToString());
                     result += "%u";
