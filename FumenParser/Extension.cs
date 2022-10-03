@@ -42,6 +42,11 @@ namespace Fumen
             return result;
         }
 
+        /// <summary>
+        /// ASCIIにない文字はUnicodeに変換
+        /// </summary>
+        /// <param name="str">変換文字列</param>
+        /// <returns>Unicode文字列</returns>
         static public string ConvertLetters2Unicode(this string str)
         {
             var result = string.Empty;

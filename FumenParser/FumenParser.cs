@@ -30,8 +30,11 @@ namespace Fumen
         public const int FIELD_WIDTH = 10;
         public const int FIELD_SIZE = FIELD_HEIGHT * FIELD_WIDTH;
 
-
-        //https://fumen.zui.jp/?v110@ReC3jbF3gbA3ibH3gbE3pbAoUkAlvs2A1sDfET4p9B?lPZOBToDfEVZi9Alvs2AUDEfETYOVB7eDuKPkAlvs2A1sDf?ETY9KBlvs2A1yDfETo/AClPxRBTuDfEVekRBFxqnAUNKSA1?dkRByXHDBQRsRA1dEEBEYHDBQEFSAVvT3AwXPNBVD5AANRP?PAU9rSA1dEEBCYHDBQ04AAaHPVAUNuSA1dkRByX3JBzXOSA?Vl0ACkAAAA
+        /// <summary>
+        /// 渡されたURLパラメータを譜面データに変換
+        /// </summary>
+        /// <param name="URLParameter">URLパラメータ 文頭のhttpの有無は自動判別</param>
+        /// <returns></returns>
         static public FumenData Decode(string URLParameter)
         {
             string urlParam;
@@ -50,106 +53,92 @@ namespace Fumen
             urlOffset += 1;//@  
             int vhCount = 0;
 
+            //ページループ
             while (true)
             {
                 fumenData.Pages.Add(new Page(FIELD_HEIGHT, FIELD_WIDTH));
-                var topFumenPage = fumenData.Pages[fumenData.Pages.Count - 1];
+                var topPage = fumenData.Pages[fumenData.Pages.Count - 1];
 
                 //盤面
-                {
-                    int blockOffset = 0;
-
-                    //ブロック別取得ループ
-                    while (blockOffset != FIELD_SIZE)
-                    {
-                        if (vhCount > 0)
-                        {
-                            vhCount--;
-                            topFumenPage.Field = (int[])fumenData.Pages[fumenData.Pages.Count - 2].Field.Clone();
-                            break;
-                        }
-
-                        var tempdata_str = urlParam.Substring(urlOffset, 2);
-                        urlOffset += 2;
-
-                        if (tempdata_str == "vh")
-                        {
-                            vhCount = Poll(1, urlParam.Substring(urlOffset, 1));
-                            urlOffset += 1;
-
-                            //初回vh
-                            // if (fumenData.Pages.Count - 1 == 0)
-                            //     vhCount--;
-
-                        }
-
-                        var tempdata = Poll(2, tempdata_str);
-
-                        BlockKind data_blockDiff = (BlockKind)(tempdata / FIELD_SIZE) - 8;
-                        int data_count = tempdata % FIELD_SIZE + 1;
-
-                        int blockKind;
-
-                        if (fumenData.Pages.Count == 1)
-                            blockKind = (int)data_blockDiff;
-                        else
-                            blockKind = fumenData.Pages[fumenData.Pages.Count - 2].Field[blockOffset] - (int)data_blockDiff + 8;
-
-                        // TODO: 変換調整
-                        blockKind = (int)data_blockDiff;
-                        for (int i = 0; i < data_count; i++)
-                            topFumenPage.Field[blockOffset + i] = blockKind;
-
-                        blockOffset += data_count;
-                    }
-                }
-
+                DecodeField(topPage);
                 //ミノフラグ
-                {
-
-                    var tempdata = Poll(3, urlParam.Substring(urlOffset, 3));
-                    urlOffset += 3;
-
-                    var kind = tempdata % 8;
-                    tempdata /= 8;
-                    var rotation = tempdata % 4;
-                    tempdata /= 4;
-                    var location = tempdata % FIELD_SIZE;
-                    tempdata /= FIELD_SIZE;
-
-                    var raise = tempdata % 2 == 1 ? true : false;
-                    tempdata /= 2;
-                    var mirror = tempdata % 2 == 1 ? true : false;
-                    tempdata /= 2;
-                    var color = tempdata % 2 == 1 ? true : false;
-                    tempdata /= 2;
-                    var comment = tempdata % 2 == 1 ? true : false;
-                    tempdata /= 2;
-                    var locked = tempdata % 2 == 0 ? true : false;
-
-                    topFumenPage.Current = (kind, rotation, location);
-                    topFumenPage.Flag = (raise, mirror, color, comment, locked);
-                }
-
-                // TODO: 更新フラグが立ってない間はコメントコピー
+                DecodeMinoFlag(topPage);
                 //コメント
-                if (topFumenPage.Flag.comment)
-                    topFumenPage.Comment = ConvertComment2Letters(urlParam, ref urlOffset);
-
+                if (topPage.Flag.comment)
+                    topPage.Comment = DecodeComment(urlParam, ref urlOffset);
 
                 if (urlOffset == urlParam.Length)
                     break;
             }
 
             return fumenData;
+
+
+            void DecodeField(Page topPage)
+            {
+                int blockOffset = 0;
+
+                //ブロック別取得ループ
+                while (blockOffset != FIELD_SIZE)
+                {
+                    if (vhCount > 0)
+                    {
+                        vhCount--;
+                        topPage.Field = (int[])fumenData.Pages[fumenData.Pages.Count - 2].Field.Clone();
+                        break;
+                    }
+
+                    var tempdata_str = urlParam.Substring(urlOffset, 2);
+                    urlOffset += 2;
+
+                    if (tempdata_str == "vh")
+                    {
+                        vhCount = Poll(1, urlParam.Substring(urlOffset, 1));
+                        urlOffset += 1;
+                    }
+
+                    var tempdata = Poll(2, tempdata_str);
+
+                    BlockKind data_blockKind = (BlockKind)(tempdata / FIELD_SIZE) - 8;
+                    int data_count = tempdata % FIELD_SIZE + 1;
+
+                    for (int i = 0; i < data_count; i++)
+                        topPage.Field[blockOffset + i] = (int)data_blockKind;
+
+                    blockOffset += data_count;
+                }
+            }
+            void DecodeMinoFlag(Page topPage)
+            {
+                var tempdata = Poll(3, urlParam.Substring(urlOffset, 3));
+                urlOffset += 3;
+
+                var kind = tempdata % 8;
+                tempdata /= 8;
+                var rotation = tempdata % 4;
+                tempdata /= 4;
+                var location = tempdata % FIELD_SIZE;
+                tempdata /= FIELD_SIZE;
+                var raise = tempdata % 2 == 1 ? true : false;
+                tempdata /= 2;
+                var mirror = tempdata % 2 == 1 ? true : false;
+                tempdata /= 2;
+                var color = tempdata % 2 == 1 ? true : false;
+                tempdata /= 2;
+                var comment = tempdata % 2 == 1 ? true : false;
+                tempdata /= 2;
+                var locked = tempdata % 2 == 0 ? true : false;
+
+                topPage.Current = (kind, rotation, location);
+                topPage.Flag = (raise, mirror, color, comment, locked);
+            }
         }
 
-        public static string Test(string str)
-        {
-            var value=0;
-            return ConvertComment2Letters(str,ref value);
-        }
-
+        /// <summary>
+        /// 渡された譜面データをURLパラメータ用に変換
+        /// </summary>
+        /// <param name="fumenData"></param>
+        /// <returns></returns>
         static public string Encode(FumenData fumenData)
         {
             string resultStr = string.Empty;
@@ -160,91 +149,82 @@ namespace Fumen
 
             int vhCount = 0;
 
+            //ページループ
             for (int pageIndex = 0; pageIndex < fumenData.Pages.Count; pageIndex++)
             {
                 var currentPage = fumenData.Pages[pageIndex];
 
                 if (vhCount == 0)
+                    EncodeField(pageIndex, currentPage);
+                else
+                    vhCount--;
+
+                EncodeMinoFlag(currentPage);
+
+                if (currentPage.Flag.comment)
+                    resultStr += EncodeComment(currentPage.Comment);
+
+            }
+
+            return resultStr;
+
+
+            void EncodeField(int pageIndex, Page currentPage)
+            {
+                int blockKind = currentPage.Field[0];
+                int blockCount = 1;
+
+                for (int y = 0; y < FIELD_HEIGHT; y++)
                 {
-                    int blockKind = currentPage.Field[0];
-                    int blockCount = 1;
-
-
-                    for (int y = 0; y < FIELD_HEIGHT; y++)
+                    for (int x = 0; x < FIELD_WIDTH; x++)
                     {
-                        for (int x = 0; x < FIELD_WIDTH; x++)
+                        if (x == 0 && y == 0)
+                            continue;
+
+                        //同じ種類ならまとめる、違ったら今までまとめた分をエンコード
+                        if (blockKind == currentPage.Field[x + y * 10])
                         {
-                            if (x == 0 && y == 0)
-                                continue;
+                            blockCount++;
 
-                            if (blockKind == currentPage.Field[x + y * 10])
-                            {
-                                blockCount++;
-
-                                if (y == FIELD_HEIGHT - 1 && x == FIELD_WIDTH - 1)
-                                {
-                                    Update();
-                                }
-                            }
-                            else
-                            {
-                                Update();
-
-
-
-                                blockKind = currentPage.Field[x + y * 10];
-                                blockCount = 1;
-                            }
-
-                            void Update()
-                            {
-                                //全て同じ盤面でも、最初がvhだったら
-                                //
-
-                                // TODO: リアルな値にするので後はよろしく
-
-
-                                int blockDiff;
-                                if (pageIndex - 1 >= 0)
-                                    blockDiff = currentPage.Field[x + y * 10 - 1] - currentPage.Field[x + y * 10 - 1 - 1];
-                                else
-                                    blockDiff = currentPage.Field[x + y * 10 - 1];
-
-                                blockDiff = currentPage.Field[x + y * 10 - 1];
-
-#if DEBUG
-                                int a = 3;
-#endif
-                                var encodedData = PollRevert(2, (blockDiff + 8) * 240 + (blockCount - 1));
-                                resultStr += encodedData;
-
-                                if (encodedData == "vh")
-                                {
-                                    while (true)
-                                    {
-                                        if (pageIndex + vhCount + 1 < fumenData.Pages.Count &&
-                                            fumenData.Pages[pageIndex].Field.IsSameValue(fumenData.Pages[pageIndex + 1 + vhCount].Field))
-                                        {
-                                            vhCount++;
-                                        }
-                                        else
-                                            break;
-                                    }
-
-                                    resultStr += PollRevert(1, vhCount);
-                                }
-                            }
-
+                            //シメのまとめ
+                            if (y == FIELD_HEIGHT - 1 && x == FIELD_WIDTH - 1)
+                                EncodeFieldPartially();
                         }
+                        else
+                        {
+                            EncodeFieldPartially();
+
+                            blockKind = currentPage.Field[x + y * 10];
+                            blockCount = 1;
+                        }
+
+                        //まとめた分をエンコード関数
+                        void EncodeFieldPartially()
+                        {
+                            var encodedData = PollRevert(2, (currentPage.Field[x + y * 10 - 1] + 8) * 240 + (blockCount - 1));
+                            resultStr += encodedData;
+
+                            if (encodedData == "vh")
+                            {
+                                while (true)
+                                {
+                                    if (pageIndex + vhCount + 1 < fumenData.Pages.Count &&
+                                        fumenData.Pages[pageIndex].Field.IsSameValue(fumenData.Pages[pageIndex + 1 + vhCount].Field))
+                                        vhCount++;
+                                    else
+                                        break;
+                                }
+
+                                resultStr += PollRevert(1, vhCount);
+                            }
+                        }
+
                     }
                 }
-                else
-                {
-                    vhCount--;
-                }
 
-
-                // TODO: ミノ情報を追加した後、盤面リピートを先読み調査して追加、vhCountを作っておく
+            }
+            void EncodeMinoFlag(Page currentPage)
+            {
                 int minoFlagData = currentPage.Flag.locked ? 0 : 1;
                 minoFlagData *= 2;
                 minoFlagData += currentPage.Flag.comment ? 1 : 0;
@@ -262,18 +242,17 @@ namespace Fumen
                 minoFlagData += currentPage.Current.kind;
                 resultStr += PollRevert(3, minoFlagData);
 
-
-                //コメントをUnicodeに変換して、コメントテーブルで変換（char）、一つの数値に変換
-                if (currentPage.Flag.comment)
-                    resultStr += EncodeComment(currentPage.Comment);
-
             }
-
-            return resultStr;
 
         }
 
-        static public string ConvertComment2Letters(string urlParam, ref int urlOffset)
+        /// <summary>
+        /// データ文字列を本来の文字列に変換
+        /// </summary>
+        /// <param name="urlParam">変換対象の文字列</param>
+        /// <param name="urlOffset">変換対象の文字列のオフセット</param>
+        /// <returns></returns>
+        static public string DecodeComment(string urlParam, ref int urlOffset)
         {
             var letterCount = Poll(2, urlParam.Substring(urlOffset, 2));
             urlOffset += 2;
@@ -316,7 +295,11 @@ namespace Fumen
 
             return ConvertUnicode(unicodeComment);
         }
-
+        /// <summary>
+        /// Unicode文字列を本来の文字列に変換
+        /// </summary>
+        /// <param name="str">Unicode文字列</param>
+        /// <returns></returns>
         static public string ConvertUnicode(string str)
         {
             string result = string.Empty;
@@ -341,7 +324,12 @@ namespace Fumen
 
             return result;
         }
-
+        /// <summary>
+        /// データ文字列を数値に変換
+        /// </summary>
+        /// <param name="n">桁数</param>
+        /// <param name="value">変換対象の文字列</param>
+        /// <returns></returns>
         public static int Poll(int n, string value)
         {
             int result = 0;
@@ -355,7 +343,12 @@ namespace Fumen
 
             return result;
         }
-
+        /// <summary>
+        /// 数値をデータ文字列に変換
+        /// </summary>
+        /// <param name="n">桁数</param>
+        /// <param name="value">変換対象の値</param>
+        /// <returns></returns>
         public static string PollRevert(int n, int value)
         {
             string result = string.Empty;
@@ -369,7 +362,11 @@ namespace Fumen
 
             return result;
         }
-
+        /// <summary>
+        /// 文字列をデータ文字列に変換
+        /// </summary>
+        /// <param name="str">文字列</param>
+        /// <returns>データ文字列</returns>
         static string EncodeComment(string str)
         {
             string resultStr = string.Empty;
@@ -420,8 +417,5 @@ namespace Fumen
             return resultStr;
 
         }
-        //左上が0、右下に向かって++
-
-
     }
 }
