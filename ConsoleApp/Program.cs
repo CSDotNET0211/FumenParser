@@ -10,7 +10,6 @@ while (true)
 
  var decode = FumenParser.Decode(url);
     var encode = FumenParser.Encode(decode);
-    Console.WriteLine(FumenParser.Poll(2, "Je")/240);
     Console.WriteLine("ori:"+url.Replace("?",""));
     Console.WriteLine("enc:"+encode);
 

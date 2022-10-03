@@ -26,9 +26,12 @@ namespace Fumen
             West
         }
 
-        public const int FIELD_HEIGHT = 24;
+        public static int FIELD_HEIGHT { get; private set; } = 24;
         public const int FIELD_WIDTH = 10;
-        public const int FIELD_SIZE = FIELD_HEIGHT * FIELD_WIDTH;
+     static   public int FIELD_SIZE
+        {
+            get { return FIELD_WIDTH * FIELD_HEIGHT; }
+        }
 
         /// <summary>
         /// 渡されたURLパラメータを譜面データに変換
@@ -52,6 +55,13 @@ namespace Fumen
             urlOffset += 3;
             urlOffset += 1;//@  
             int vhCount = 0;
+
+            if (fumenData.Version == "115")
+                FIELD_HEIGHT = 24;
+            else if (fumenData.Version == "110")
+                FIELD_HEIGHT = 22;
+            else
+                throw new Exception("不明なバージョン");
 
             //ページループ
             while (true)
@@ -141,6 +151,13 @@ namespace Fumen
         /// <returns></returns>
         static public string Encode(FumenData fumenData)
         {
+            if (fumenData.Version == "115")
+                FIELD_HEIGHT = 24;
+            else if (fumenData.Version == "110")
+                FIELD_HEIGHT = 22;
+            else
+                throw new Exception("不明なバージョン");
+
             string resultStr = string.Empty;
 
             resultStr += fumenData.View;
@@ -201,7 +218,7 @@ namespace Fumen
                         //まとめた分をエンコード関数
                         void EncodeFieldPartially()
                         {
-                            var encodedData = PollRevert(2, (currentPage.Field[x + y * 10 - 1] + 8) * 240 + (blockCount - 1));
+                            var encodedData = PollRevert(2, (currentPage.Field[x + y * 10 - 1] + 8) * FIELD_SIZE + (blockCount - 1));
                             resultStr += encodedData;
 
                             if (encodedData == "vh")
