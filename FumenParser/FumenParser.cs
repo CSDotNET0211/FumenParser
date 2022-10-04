@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.VisualBasic;
+using System;
 
 namespace Fumen
 {
@@ -28,7 +29,7 @@ namespace Fumen
 
         public static int FIELD_HEIGHT { get; private set; } = 24;
         public const int FIELD_WIDTH = 10;
-     static   public int FIELD_SIZE
+        static public int FIELD_SIZE
         {
             get { return FIELD_WIDTH * FIELD_HEIGHT; }
         }
@@ -263,13 +264,66 @@ namespace Fumen
 
         }
 
+        static public void Mirror(int[] field, string version)
+        {
+            int HEIGHT;
+            if (version == "115")
+                HEIGHT = 24;
+            else if (version == "110")
+                HEIGHT = 22;
+            else
+                throw new Exception("不明なバージョン");
+
+            for (int y = 0; y < HEIGHT; y++)
+            {
+                for (int x = 0; x < FIELD_WIDTH; x++)
+                {
+                    var temp = field[x + y * 10];
+                    field[x + y * 10] = field[(FIELD_WIDTH - 1 - x) + y * 10];
+                }
+            }
+        }
+
+        static public void Raise(int[] field, string version)
+        {
+            int HEIGHT;
+            if (version == "115")
+                HEIGHT = 24;
+            else if (version == "110")
+                HEIGHT = 22;
+            else
+                throw new Exception("不明なバージョン");
+
+            throw new Exception("未完成");
+
+
+            for (int y = FIELD_HEIGHT - 1; y >= 0; y--)
+            {
+                for (int x = 0; x < FIELD_WIDTH; x++)
+                {
+                    if (y == FIELD_HEIGHT - 1)
+                        field[x + y * 10] = (int)BlockKind.Empty;
+                    else
+                        field[x + y * 10] = field[x + (y - 1) * 10];
+                }
+            }
+
+        }
+
+        static public void SetCurrent(bool locked)
+        {
+
+        }
+
+
+
         /// <summary>
         /// データ文字列を本来の文字列に変換
         /// </summary>
         /// <param name="urlParam">変換対象の文字列</param>
         /// <param name="urlOffset">変換対象の文字列のオフセット</param>
         /// <returns></returns>
-        static public string DecodeComment(string urlParam, ref int urlOffset)
+        static string DecodeComment(string urlParam, ref int urlOffset)
         {
             var letterCount = Poll(2, urlParam.Substring(urlOffset, 2));
             urlOffset += 2;
@@ -318,7 +372,7 @@ namespace Fumen
         /// </summary>
         /// <param name="str">Unicode文字列</param>
         /// <returns></returns>
-        static public string ConvertUnicode(string str)
+        static string ConvertUnicode(string str)
         {
             string result = string.Empty;
             List<int> unicodeBuff = new List<int>();
@@ -348,7 +402,7 @@ namespace Fumen
         /// <param name="n">桁数</param>
         /// <param name="value">変換対象の文字列</param>
         /// <returns></returns>
-        public static int Poll(int n, string value)
+        static int Poll(int n, string value)
         {
             int result = 0;
             int temp = 1;
@@ -367,7 +421,7 @@ namespace Fumen
         /// <param name="n">桁数</param>
         /// <param name="value">変換対象の値</param>
         /// <returns></returns>
-        public static string PollRevert(int n, int value)
+        static string PollRevert(int n, int value)
         {
             string result = string.Empty;
             var tempPow = (int)Math.Pow(64, (n - 1));
