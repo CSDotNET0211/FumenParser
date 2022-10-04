@@ -98,6 +98,7 @@ namespace Fumen
                 //ブロック別取得ループ
                 while (blockOffset != FIELD_SIZE)
                 {
+                    //先にvhCount加算判定をする
                     if (vhCount > 0)
                     {
                         vhCount--;
@@ -110,7 +111,7 @@ namespace Fumen
 
                     if (tempdata_str == vhValue)
                     {
-                        vhCount = Poll(1, urlParam.Substring(urlOffset, 1));
+                        vhCount = Poll(1, urlParam.Substring(urlOffset, 1))+1;
                         urlOffset += 1;
                     }
 

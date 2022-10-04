@@ -8,7 +8,7 @@ while (true)
     var test = 0;
     //Console.WriteLine(FumenParser.DecodeComment("DAFLrAA", ref test));
 
-
+    //v115@9gwhBeQ4EeAtwhBeR4CeBtwhRpg0Q4CeAtglwhRpi0?AeilJeAgHvhA8iB
     // Console.WriteLine(FumenParser.PollRevert(2,8*220+219));
     Console.WriteLine("input");
     url = Console.ReadLine();
