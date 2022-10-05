@@ -61,12 +61,12 @@ namespace Fumen
             if (fumenData.Version == "115")
             {
                 FIELD_HEIGHT = 24;
-                vhValue="vh";
+                vhValue = "vh";
             }
             else if (fumenData.Version == "110")
             {
                 FIELD_HEIGHT = 22;
-                vhValue="7e";
+                vhValue = "7e";
             }
             else
                 throw new Exception("不明なバージョン");
@@ -99,7 +99,7 @@ namespace Fumen
                 //ブロック別取得ループ
                 while (blockOffset != FIELD_SIZE)
                 {
-                    //先にvhCount加算判定をする
+                    //vhCountがあったら
                     if (vhCount > 0)
                     {
                         vhCount--;
@@ -107,22 +107,39 @@ namespace Fumen
                         break;
                     }
 
+                    //vhCountがあったらそもそもスキップ
                     var tempdata_str = urlParam.Substring(urlOffset, 2);
                     urlOffset += 2;
 
                     if (tempdata_str == vhValue)
                     {
-                        vhCount = Poll(1, urlParam.Substring(urlOffset, 1))+1;
+                        vhCount = Poll(1, urlParam.Substring(urlOffset, 1)) + 1;
                         urlOffset += 1;
+
+                        //元のをコピー
+                        if (fumenData.Pages.Count - 2 >= 0)
+                            topPage.Field = (int[])fumenData.Pages[fumenData.Pages.Count - 2].Field.Clone();
+
+                        vhCount--;
+                        break;
                     }
+
+
+
 
                     var tempdata = Poll(2, tempdata_str);
 
-                    BlockKind data_blockKind = (BlockKind)(tempdata / FIELD_SIZE) - 8;
+                    BlockKind data_blockDiff = (BlockKind)(tempdata / FIELD_SIZE) - 8;
                     int data_count = tempdata % FIELD_SIZE + 1;
 
+                 //   if()
+
+
                     for (int i = 0; i < data_count; i++)
-                        topPage.Field[blockOffset + i] = (int)data_blockKind;
+                        if(fumenData.Pages.Count==1)
+                        topPage.Field[blockOffset + i] = (int)data_blockDiff;
+                            else
+                        topPage.Field[blockOffset + i] = (int)data_blockDiff + fumenData.Pages[fumenData.Pages.Count - 2].Field[blockOffset+i];
 
                     blockOffset += data_count;
                 }
@@ -164,7 +181,7 @@ namespace Fumen
             if (fumenData.Version == "115")
             {
                 FIELD_HEIGHT = 24;
-                vhValue="vh";
+                vhValue = "vh";
             }
             else if (fumenData.Version == "110")
             {
@@ -182,14 +199,24 @@ namespace Fumen
 
             int vhCount = 0;
 
+
+            bool vhFlag = false;
             //ページループ
             for (int pageIndex = 0; pageIndex < fumenData.Pages.Count; pageIndex++)
             {
                 var currentPage = fumenData.Pages[pageIndex];
 
-                if (vhCount == 0)
-                    EncodeField(pageIndex, currentPage);
-                else
+                //通常
+                if (vhCount == 0 && !vhFlag)
+                    EncodeField(pageIndex, currentPage, ref vhFlag);
+                else if (vhFlag)//vhループ初回
+                {
+                    resultStr += vhValue;
+                    resultStr += PollRevert(1, vhCount - 1);
+                    vhCount--;
+                    vhFlag = false;
+                }
+                else//vhループ
                     vhCount--;
 
                 EncodeMinoFlag(currentPage);
@@ -202,7 +229,7 @@ namespace Fumen
             return resultStr;
 
 
-            void EncodeField(int pageIndex, Page currentPage)
+            void EncodeField(int pageIndex, Page currentPage, ref bool vhFlag)
             {
                 int blockKind = currentPage.Field[0];
                 int blockCount = 1;
@@ -221,24 +248,28 @@ namespace Fumen
 
                             //シメのまとめ
                             if (y == FIELD_HEIGHT - 1 && x == FIELD_WIDTH - 1)
-                                EncodeFieldPartially();
+                                EncodeFieldPartially(true, ref vhFlag);
                         }
                         else
                         {
-                            EncodeFieldPartially();
+                            EncodeFieldPartially(false, ref vhFlag);
 
                             blockKind = currentPage.Field[x + y * 10];
                             blockCount = 1;
                         }
 
                         //まとめた分をエンコード関数
-                        void EncodeFieldPartially()
+                        void EncodeFieldPartially(bool final, ref bool vhFlag)
                         {
+                            if (vhCount != 0)
+                                throw new Exception();
+
                             var encodedData = PollRevert(2, (currentPage.Field[x + y * 10 - 1] + 8) * FIELD_SIZE + (blockCount - 1));
                             resultStr += encodedData;
 
-                            if (encodedData == vhValue)
+                            if (final)
                             {
+
                                 while (true)
                                 {
                                     if (pageIndex + vhCount + 1 < fumenData.Pages.Count &&
@@ -248,7 +279,11 @@ namespace Fumen
                                         break;
                                 }
 
-                                resultStr += PollRevert(1, vhCount);
+                                if (encodedData == vhValue && pageIndex == 0)
+                                    resultStr += PollRevert(1, vhCount);
+
+                                else
+                                    vhFlag = true;
                             }
                         }
 

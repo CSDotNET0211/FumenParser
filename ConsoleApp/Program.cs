@@ -10,6 +10,7 @@ while (true)
 
     //v115@9gwhBeQ4EeAtwhBeR4CeBtwhRpg0Q4CeAtglwhRpi0?AeilJeAgHvhA8iB
     // Console.WriteLine(FumenParser.PollRevert(2,8*220+219));
+    Console.WriteLine("-------------------------");
     Console.WriteLine("input");
     url = Console.ReadLine();
 
