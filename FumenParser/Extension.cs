@@ -27,17 +27,34 @@ namespace Fumen
 
         static public string ConvertUnicode2Letter(this List<int> list)
         {
-            if (list.Count != 6)
+            string result;
+
+            if (!(list.Count == 3 || list.Count == 6))
                 throw new Exception("正式なフォーマットではありません。");
 
-            var tempstr = "\\";
-            for (int i = 1; i < 6; i++)
-                tempstr += ((char)list[i]).ToString();
+            if (list[0] == '%')
+            {
+                if (list[1] == 'u')
+                {
+                    var tempstr = "\\u";
+                    for (int i = 2; i < 6; i++)
+                        tempstr += ((char)list[i]).ToString();
 
-            var result= System.Text.RegularExpressions.Regex.Unescape(tempstr);
+                    result = System.Text.RegularExpressions.Regex.Unescape(tempstr);
+                }
+                else
+                {
+                    var tempstr = "\\u";
+                    tempstr+="00";
+                    for (int i = 1; i < 3; i++)
+                        tempstr += ((char)list[i]).ToString();
 
-          //  if ()
+                    result = System.Text.RegularExpressions.Regex.Unescape(tempstr);
 
+                }
+            }
+            else
+                throw new Exception("正式なフォーマットではありません。");
 
             return result;
         }
@@ -54,16 +71,28 @@ namespace Fumen
 
             for (int i = 0; i < str.Length; i++)
             {
-                if (str[i] <= 127)
+                //Unicode:3
+                if ((' ' <= str[i] && str[i] <= ')') ||
+                    str[i] == ',' ||
+                    (':' <= str[i] && str[i] <= '?') ||
+                     ('[' <= str[i] && str[i] <= '^') ||
+                       str[i] == '`' ||
+                        ('{' <= str[i] && str[i] <= '~'))
                 {
-                    result += str[i].ToString();
+                    byte[] encodedBytes = encoder.GetBytes(str[i].ToString());
+                    result += "%";
+                    result += string.Format("{0:X2}", encodedBytes[1]);
                 }
-                else
+                else if (str[i] > 127)//Unicode:6
                 {
                     byte[] encodedBytes = encoder.GetBytes(str[i].ToString());
                     result += "%u";
                     result += string.Format("{0:X2}", encodedBytes[0]);
                     result += string.Format("{0:X2}", encodedBytes[1]);
+                }
+                else//ASCII
+                {
+                    result += str[i].ToString();
                 }
             }
 
